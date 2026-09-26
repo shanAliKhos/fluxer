@@ -5,6 +5,7 @@
 
 -export([
     maybe_handle_custom_status/2,
+    maybe_handle_activities/2,
     handle_user_settings_update/2,
     handle_user_update_event/2,
     handle_message_create_event/2,
@@ -41,6 +42,29 @@ maybe_handle_custom_status(Request, State) ->
         _ ->
             {Request, State}
     end.
+
+-define(MAX_ACTIVITIES, 5).
+
+-spec maybe_handle_activities(map(), state()) -> {map(), state()}.
+maybe_handle_activities(Request, State) ->
+    case maps:find(<<"activities">>, Request) of
+        error ->
+            {Request, State};
+        {ok, null} ->
+            {Request#{<<"activities">> => []}, State#{activities => []}};
+        {ok, Activities} when is_list(Activities) ->
+            Normalized = normalize_activities(Activities),
+            {Request#{<<"activities">> => Normalized}, State#{activities => Normalized}};
+        _ ->
+            {Request, State}
+    end.
+
+-spec normalize_activities([term()]) -> [map()].
+normalize_activities(Activities) ->
+    lists:sublist(
+        [A || A <- Activities, is_map(A), is_binary(maps:get(<<"name">>, A, undefined))],
+        ?MAX_ACTIVITIES
+    ).
 
 -spec handle_user_settings_update(map(), state()) -> state().
 handle_user_settings_update(Data, State) ->

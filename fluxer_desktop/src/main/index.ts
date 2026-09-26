@@ -16,6 +16,7 @@ import {
 	WINDOWS_TOAST_ACTIVATOR_CLSID,
 } from '@electron/common/DesktopIdentity';
 import {configureUserDataPath} from '@electron/common/UserDataPath';
+import {onRpcActivity, startArRpcServer, stopArRpcServer} from '@electron/main/ArRpcServer';
 import {registerAutostartHandlers} from '@electron/main/Autostart';
 import {
 	addLinuxHardwareVideoEncodeFeatures,
@@ -138,6 +139,7 @@ function writeCliAndExit(stream: NodeJS.WriteStream, message: string, code: numb
 
 let launchConfigurationError: Error | null = null;
 let launchDiagnosticOptions: Record<string, unknown> = {};
+let stopRpcActivityForwarding: (() => void) | null = null;
 
 try {
 	launchDiagnosticOptions = describeLaunchDiagnosticOptions(process.argv);
@@ -412,6 +414,19 @@ if (launchConfigurationError) {
 						showWindow();
 					}
 				});
+				void startArRpcServer().catch((error: unknown) => {
+					log.error('[RPC] Failed to start activity RPC server:', error);
+				});
+				stopRpcActivityForwarding = onRpcActivity((activity, pid, source = 'ipc') => {
+					const mainWindow = getMainWindow();
+					if (!mainWindow || mainWindow.isDestroyed()) return;
+					mainWindow.webContents.send('rpc-activity-update', {
+						activity,
+						pid,
+						receivedAt: Date.now(),
+						source,
+					});
+				});
 				log.info('App initialized successfully');
 			})
 			.catch((error: unknown) => {
@@ -457,7 +472,9 @@ if (launchConfigurationError) {
 			cleanupNativeHardwareEncoderHandlers();
 			cleanupVirtmic();
 			destroyDesktopTray();
-			const asyncCleanups: Array<Promise<unknown>> = [];
+			stopRpcActivityForwarding?.();
+			stopRpcActivityForwarding = null;
+			const asyncCleanups: Array<Promise<unknown>> = [stopArRpcServer()];
 			if (netLog.currentlyLogging) {
 				asyncCleanups.push(
 					netLog.stopLogging().catch((error) => {

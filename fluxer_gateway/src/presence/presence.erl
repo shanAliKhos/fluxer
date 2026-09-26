@@ -30,6 +30,7 @@
     sessions := sessions(),
     push_buffer := [push_buffer_entry()],
     custom_status := custom_status(),
+    activities := [map()],
     status := status(),
     guild_ids := #{integer() => true},
     temporary_guild_ids := #{integer() => true},
@@ -47,7 +48,8 @@
     friend_ids => [user_id()],
     group_dm_recipients => #{integer() => [user_id()] | #{user_id() => true}},
     status := status(),
-    custom_status => custom_status()
+    custom_status => custom_status(),
+    activities => [map()]
 }.
 
 -spec start_link(presence_data()) -> {ok, pid()} | {error, term()}.
@@ -201,6 +203,7 @@ build_initial_state(PresenceData) ->
         sessions => #{},
         push_buffer => [],
         custom_status => maps:get(custom_status, PresenceData, null),
+        activities => maps:get(activities, PresenceData, []),
         status => Status,
         guild_ids => presence_targets:map_from_ids(GuildIds),
         temporary_guild_ids => #{},
@@ -221,11 +224,14 @@ select_friend_ids(false, FriendIds) ->
 
 -spec handle_presence_update_cast(map(), state()) -> {noreply, state()}.
 handle_presence_update_cast(Request, State) ->
-    {UpdatedRequest, StateWithCustomStatus} = presence_update:maybe_handle_custom_status(
+    {UpdatedRequest0, StateWithCustomStatus} = presence_update:maybe_handle_custom_status(
         Request, State
     ),
+    {UpdatedRequest, StateWithActivities} = presence_update:maybe_handle_activities(
+        UpdatedRequest0, StateWithCustomStatus
+    ),
     {noreply, NewState} = presence_session:handle_presence_update(
-        UpdatedRequest, StateWithCustomStatus
+        UpdatedRequest, StateWithActivities
     ),
     FinalState = presence_broadcast:publish_global_presence(
         maps:get(sessions, NewState), NewState
@@ -349,6 +355,7 @@ test_state(Sessions) ->
         sessions => Sessions,
         push_buffer => [],
         custom_status => null,
+        activities => [],
         status => online,
         guild_ids => #{},
         temporary_guild_ids => #{},

@@ -257,6 +257,34 @@ export const CustomStatusResponse = z.object({
 
 export type CustomStatusResponse = z.infer<typeof CustomStatusResponse>;
 
+const UserActivityTimestamps = z
+	.object({
+		start: z.number().int().optional().describe('Unix timestamp in seconds when the activity started'),
+		end: z.number().int().optional().describe('Unix timestamp in seconds when the activity ends'),
+	})
+	.describe('Activity timestamp metadata');
+
+const UserActivityAssets = z
+	.object({
+		large_image: z.string().max(256).optional(),
+		large_text: z.string().max(128).optional(),
+		small_image: z.string().max(256).optional(),
+		small_text: z.string().max(128).optional(),
+	})
+	.describe('Activity image assets');
+
+export const UserActivitySchema = z.object({
+	name: z.string().max(128).describe('Activity name, usually the application or media title'),
+	type: z.number().int().min(0).max(5).describe('Activity type'),
+	application_id: SnowflakeStringType.optional().describe('Application ID for rich presence'),
+	details: z.string().max(128).optional().describe('First line of rich presence text'),
+	state: z.string().max(128).optional().describe('Second line of rich presence text'),
+	timestamps: UserActivityTimestamps.optional(),
+	assets: UserActivityAssets.optional(),
+});
+
+export type UserActivity = z.infer<typeof UserActivitySchema>;
+
 export const UserSettingsResponse = z.object({
 	status: z.string().describe('The current online status of the user'),
 	status_resets_at: z.iso.datetime().nullish().describe('ISO8601 timestamp of when the status will reset'),
