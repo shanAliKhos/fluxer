@@ -532,7 +532,12 @@ send_presence_update(#{presence_pid := Pid}, SessionId, NewStatus, NewAfk, NewMo
             {ok, CS} -> BaseMsg#{<<"custom_status">> => CS};
             error -> BaseMsg
         end,
-    gen_server:cast(Pid, {presence_update, Msg}),
+    MsgWithActivities =
+        case maps:find(<<"activities">>, Update) of
+            {ok, Activities} -> Msg#{<<"activities">> => Activities};
+            error -> Msg
+        end,
+    gen_server:cast(Pid, {presence_update, MsgWithActivities}),
     ok.
 
 -spec handle_initial_global_presences([map()], session_state()) -> {noreply, session_state()}.

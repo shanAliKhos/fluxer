@@ -3,6 +3,7 @@
 import Accessibility from '@app/features/accessibility/state/Accessibility';
 import {isClientBooting} from '@app/features/app/state/ClientReadiness';
 import Authentication from '@app/features/auth/state/Authentication';
+import {initializeDesktopRpcBridge} from '@app/features/platform/utils/DesktopRpcBridge';
 import {initializeDesktopTrayBridge} from '@app/features/platform/utils/DesktopTrayBridge';
 import ThemeLibrary from '@app/features/theme/state/ThemeLibrary';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
@@ -30,12 +31,14 @@ export function useDesktopElectronBridges(): void {
 			});
 		});
 		const disposeTrayBridge = initializeDesktopTrayBridge();
+		const disposeRpcBridge = initializeDesktopRpcBridge();
 		return () => {
 			unsubZoomIn?.();
 			unsubZoomOut?.();
 			unsubZoomReset?.();
 			unsubOpenSettings?.();
 			disposeTrayBridge?.();
+			disposeRpcBridge?.();
 		};
 	}, []);
 }

@@ -101,6 +101,38 @@ export interface ThemeLocalFileReadResult {
 	error?: string;
 }
 
+export interface RpcActivityTimestamps {
+	start?: number;
+	end?: number;
+}
+
+export interface RpcActivityAssets {
+	large_image?: string;
+	large_text?: string;
+	small_image?: string;
+	small_text?: string;
+}
+
+export interface RpcActivityPayload {
+	type: number;
+	application_id: string;
+	name: string;
+	details?: string;
+	state?: string;
+	timestamps?: RpcActivityTimestamps;
+	assets?: RpcActivityAssets;
+	flags?: number;
+	pid?: number;
+}
+
+export interface RpcActivityUpdatePayload {
+	activity: RpcActivityPayload | null;
+	gatewayActivity?: RpcActivityPayload | null;
+	pid?: number;
+	receivedAt?: number;
+	source: 'ipc' | 'process-scan';
+}
+
 export interface ThemeDirectoryCssFile {
 	fileName: string;
 	path: string;
@@ -476,6 +508,7 @@ export interface ElectronAPI {
 	passkeyIsSupported?(): Promise<boolean>;
 	passkeyRegister?(options: unknown, requestContext?: {pin?: string}): Promise<RegistrationResponseJSON>;
 	passkeyAuthenticate?(options: unknown, requestContext?: {pin?: string}): Promise<AuthenticationResponseJSON>;
+	onRpcActivityUpdate?(callback: (payload: RpcActivityUpdatePayload) => void): () => void;
 	virtmic?: VirtmicApi;
 	nativeAudio?: NativeAudioApi;
 	nativeScreenCapture?: NativeScreenCaptureApi;

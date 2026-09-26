@@ -29,6 +29,7 @@ import {ExponentialBackoff} from '@app/features/platform/utils/RetryScheduler';
 import LayerManager from '@app/features/ui/state/LayerManager';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
 import type {GatewayCustomStatusPayload} from '@app/features/user/state/CustomStatus';
+import type {UserActivity} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
 import type {GatewayErrorCode} from '@fluxer/constants/src/GatewayConstants';
 import {GatewayCloseCodes, GatewayOpcodes} from '@fluxer/constants/src/GatewayConstants';
@@ -485,6 +486,7 @@ export class GatewaySocket extends EventEmitter<GatewaySocketEvents> {
 		afk?: boolean,
 		mobile?: boolean,
 		customStatus?: GatewayCustomStatusPayload | null,
+		activities?: Array<UserActivity> | null,
 	): void {
 		if (!this.isConnected()) return;
 		this.sendPayload({
@@ -494,6 +496,7 @@ export class GatewaySocket extends EventEmitter<GatewaySocketEvents> {
 				...(afk !== undefined && {afk}),
 				...(mobile !== undefined && {mobile}),
 				...(customStatus !== undefined && {custom_status: customStatus}),
+				...(activities !== undefined && {activities}),
 			},
 		});
 	}

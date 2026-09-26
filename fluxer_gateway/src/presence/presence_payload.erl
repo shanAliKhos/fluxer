@@ -3,22 +3,28 @@
 -module(presence_payload).
 -typing([eqwalizer]).
 
--export([build/5]).
+-export([build/5, build/6]).
 
--export_type([status/0, custom_status/0]).
+-export_type([status/0, custom_status/0, activities/0]).
 
 -type status() :: online | offline | idle | dnd | invisible | binary().
 -type custom_status() :: map() | null.
+-type activities() :: [map()].
 
 -spec build(map(), status(), boolean(), boolean(), custom_status()) -> map().
 build(UserData, Status, Mobile, Afk, CustomStatus) ->
+    build(UserData, Status, Mobile, Afk, CustomStatus, []).
+
+-spec build(map(), status(), boolean(), boolean(), custom_status(), activities()) -> map().
+build(UserData, Status, Mobile, Afk, CustomStatus, Activities) ->
     StatusBin = ensure_status_binary(Status),
     #{
         <<"user">> => user_utils:normalize_user(UserData),
         <<"status">> => StatusBin,
         <<"mobile">> => Mobile,
         <<"afk">> => Afk,
-        <<"custom_status">> => custom_status_for(StatusBin, CustomStatus)
+        <<"custom_status">> => custom_status_for(StatusBin, CustomStatus),
+        <<"activities">> => activities_for(StatusBin, Activities)
     }.
 
 -spec ensure_status_binary(term()) -> binary().
@@ -38,6 +44,16 @@ custom_status_for(<<"invisible">>, _CustomStatus) ->
     null;
 custom_status_for(_StatusBin, CustomStatus) ->
     custom_status_expiry:clear_if_expired(normalize_custom_status(CustomStatus)).
+
+-spec activities_for(binary(), activities()) -> activities().
+activities_for(<<"offline">>, _Activities) ->
+    [];
+activities_for(<<"invisible">>, _Activities) ->
+    [];
+activities_for(_StatusBin, Activities) when is_list(Activities) ->
+    Activities;
+activities_for(_StatusBin, _) ->
+    [].
 
 -spec normalize_custom_status(term()) -> custom_status().
 normalize_custom_status(null) -> null;

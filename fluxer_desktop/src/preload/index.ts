@@ -43,6 +43,7 @@ import type {
 	NativeScreenCaptureStartResult,
 	NotificationOptions,
 	NotificationResult,
+	RpcActivityUpdatePayload,
 	SetDesktopTroubleshootingDisableHardwareAccelerationOptions,
 	SpellcheckBundledDictionary,
 	SpellcheckResolvedEngineInfo,
@@ -412,6 +413,11 @@ const api: ElectronAPI = {
 	clipboardWriteFile: (options: ClipboardWriteFileOptions): Promise<ClipboardWriteFileResult> =>
 		ipcRenderer.invoke('clipboard-write-file', options),
 	pasteFromClipboard: (): Promise<void> => ipcRenderer.invoke('clipboard-paste'),
+	onRpcActivityUpdate: (callback: (payload: RpcActivityUpdatePayload) => void): (() => void) => {
+		const handler = (_event: Electron.IpcRendererEvent, data: RpcActivityUpdatePayload): void => callback(data);
+		ipcRenderer.on('rpc-activity-update', handler);
+		return () => ipcRenderer.removeListener('rpc-activity-update', handler);
+	},
 	onDeepLink: (callback: (url: string) => void): (() => void) => {
 		const handler = (_event: Electron.IpcRendererEvent, url: string): void => {
 			callback(url);
